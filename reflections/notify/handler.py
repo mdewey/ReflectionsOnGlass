@@ -28,6 +28,12 @@ from oauth2client.appengine import StorageByKeyName
 from model import Credentials
 import util
 
+#XAPI stuff
+from google.appengine.api import users
+import requests
+import json
+import urllib, urllib2
+import uuid
 
 class NotifyHandler(webapp2.RequestHandler):
   """Request Handler for notification pings."""
@@ -84,7 +90,18 @@ class NotifyHandler(webapp2.RequestHandler):
             'text': 'You learned: %s' % item.get('text', ''),
             'notification': {'level': 'DEFAULT'}
         }
-		#send to LRS here. 
+        #send to LRS here. 
+      
+        url = "https://glass.waxlrs.com/TCAPI/statements"
+        username = "Rn64adyD1CfS1fZq7DEJ"
+        password = "NlWDNSGKgTzMWP0tTrzm"
+        description = item.get('text', '')
+        actor = item.get('creator')
+        logging.info(item)
+        logging.info(users.get_current_user())
+        statement = {"actor":{"name":"Mark Dewey","mbox":"mailto:mtdewey55@gmail.com","objectType":"Agent"},"verb":{"display":{"en-US": "Expereinced"},"id":"https://reflectionsofmyglass.appspot.com/verb"},"object":{"id":"https://reflectionsofmyglass.appspot.com/object", "definition":{"name":{"en-US":"something through Glass"},"description":{"en-US":description}}}}
+        resp = requests.post(url, data=json.dumps(statement), auth=(username, password))
+        logging.info("Sent to LRS")
         self.mirror_service.timeline().insert(
             body=body, media_body=media).execute()
         # Only handle the first successful action.

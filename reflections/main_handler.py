@@ -35,6 +35,11 @@ from oauth2client.appengine import StorageByKeyName
 from model import Credentials
 import util
 
+import requests
+import json
+import urllib
+import uuid
+
 
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
@@ -70,23 +75,9 @@ class MainHandler(webapp2.RequestHandler):
     template_values = {'userId': self.userid}
     if message:
       template_values['message'] = message
-    # self.mirror_service is initialized in util.auth_required.
-    try:
-      template_values['contact'] = self.mirror_service.contacts().get(
-        id='Python Quick Start').execute()
-    except errors.HttpError:
-      logging.info('Unable to find Python Quick Start contact.')
 
     timeline_items = self.mirror_service.timeline().list(maxResults=3).execute()
     template_values['timelineItems'] = timeline_items.get('items', [])
-
-    subscriptions = self.mirror_service.subscriptions().list().execute()
-    for subscription in subscriptions.get('items', []):
-      collection = subscription.get('collection')
-      if collection == 'timeline':
-        template_values['timelineSubscriptionExists'] = True
-      elif collection == 'locations':
-        template_values['locationSubscriptionExists'] = True
 
     template = jinja_environment.get_template('templates/index.html')
     self.response.out.write(template.render(template_values))
@@ -235,6 +226,33 @@ class MainHandler(webapp2.RequestHandler):
     return 'Contact has been deleted.'
 
 
+class VerbHandler(webapp2.RequestHandler):
+  def _render_template(self, message=None):
+    """Render the main page template."""
+    template = jinja_environment.get_template('templates/verb.html')
+    self.response.out.write(template.render())
+
+  @util.auth_required
+  def get(self):
+    """Render the main page."""
+    # Get the flash message and delete it.
+    self._render_template()
+	
+class ObjectHandler(webapp2.RequestHandler):
+  def _render_template(self, message=None):
+    """Render the main page template."""
+    template = jinja_environment.get_template('templates/object.html')
+    self.response.out.write(template.render())
+
+  @util.auth_required
+  def get(self):
+    """Render the main page."""
+    # Get the flash message and delete it.
+    self._render_template()
+
+	
 MAIN_ROUTES = [
-    ('/', MainHandler)
+    ('/', MainHandler),
+	('/verb', VerbHandler),
+	('/object', ObjectHandler)
 ]
